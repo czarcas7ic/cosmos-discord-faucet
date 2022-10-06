@@ -25,7 +25,7 @@ EXPLORER_URL      = str(c["OPTIONAL"]["explorer_url"])
 
 
 def coins_dict_to_string(coins: dict, table_fmt_: str = "") -> str:
-    headers = ["Token", "Amount (wei)", "amount / decimal"]
+    headers = ["Token", "Amount (wei)"]
     hm = []
     """
     :param table_fmt_: grid | pipe | html
@@ -34,7 +34,7 @@ def coins_dict_to_string(coins: dict, table_fmt_: str = "") -> str:
     """
     for i in range(len(coins)):
         print(list(coins.values())[i], type(list(coins.values())[i]))
-        hm.append([list(coins.keys())[i], list(coins.values())[i], int(int(list(coins.values())[i]) / DECIMAL)])
+        hm.append([list(coins.keys())[i], list(coins.values())[i]])
     d = tabulate(hm, tablefmt=table_fmt_, headers=headers)
     return d
 

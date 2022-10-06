@@ -13,10 +13,10 @@ import cosmos_api as api
 
 # Turn Down Discord Logging
 disc_log = logging.getLogger('discord')
-disc_log.setLevel(logging.CRITICAL)
+disc_log.setLevel(logging.INFO)
 
 # Configure Logging
-logging.basicConfig(stream=sys.stdout, level=logging.CRITICAL)
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Load config
@@ -45,7 +45,10 @@ LISTENING_CHANNELS = f'{FAUCET_EMOJI}faucet'
 APPROVE_EMOJI = "✅"
 REJECT_EMOJI = "🚫"
 ACTIVE_REQUESTS = {}
-client = discord.Client()
+intents = discord.Intents.default()
+intents.message_content = True
+
+client = discord.Client(intents=intents)
 
 with open("help-msg.txt", "r", encoding="utf-8") as help_file:
     help_msg = help_file.read()
@@ -65,54 +68,59 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    print("hi")
+    if message.author == client.user:
+        return
+    logger.info("new message")
     session = aiohttp.ClientSession()
     message_timestamp = time.time()
     requester = message.author
 
-    # Do not listen to your own messages
-    if message.author == client.user:
-        print("hi")
-        return
-
+    logger.info(message.content)
+    
     if message.content.startswith('$balance'):
         address = str(message.content).replace("$balance", "").replace(" ", "").lower()
+        #TODO convert 
         if address[:len(BECH32_HRP)] == BECH32_HRP:
             coins = await api.get_addr_balance(session, address)
-            if len(coins) >= 1:
+            if len(coins["aevmos"]) >= 1:
                 await message.channel.send(f'{message.author.mention}\n'
                                            f'```{api.coins_dict_to_string(coins, "grid")}```')
+                await session.close()
+
             else:
-                await message.channel.send(f'{message.author.mention} account is not initialized (balance is empty)')
+                await message.channel.send(f'{message.author.mention} account is not initialized with evmos (balance is empty)')
+                await session.close()
 
     if message.content.startswith('$help'):
         await message.channel.send(help_msg)
+        await session.close()
 
     # Show node synchronization settings
     if message.content.startswith('$faucet_status'):
-        print(requester.name, "status request")
+        logger.info(f"status request by {requester.name}")
         try:
             s = await api.get_node_status(session)
             coins = await api.get_addr_balance(session, FAUCET_ADDRESS)
-            seq, acc_num = await api.get_address_info(session, FAUCET_ADDRESS)
+
             if "node_info" in str(s) and "error" not in str(s):
                 s = f'```' \
                          f'Moniker:       {s["result"]["node_info"]["moniker"]}\n' \
                          f'Address:       {FAUCET_ADDRESS}\n' \
-                         f'Syncs?:        {s["result"]["sync_info"]["catching_up"]}\n' \
-                         f'Last block:    {s["result"]["sync_info"]["latest_block_height"]}\n' \
-                         f'Voting power:  {s["result"]["validator_info"]["voting_power"]}\n' \
+                         f'OutOfSync:     {s["result"]["sync_info"]["catching_up"]}\n' \
+                         f'Last block:    {s["result"]["sync_info"]["latest_block_height"]}\n\n' \
                          f'Faucet balance:\n{api.coins_dict_to_string(coins, "")}```'
                 await message.channel.send(s)
+                await session.close()
 
         except Exception as statusErr:
-            print(statusErr)
+            logger.error(statusErr)
 
     if message.content.startswith('$faucet_address') or message.content.startswith('$tap_address') and message.channel.name in LISTENING_CHANNELS:
         try:
             await message.channel.send(FAUCET_ADDRESS)
+            await session.close()
         except:
-            print("Can't send message $faucet_address")
+            logging.error("Can't send message $faucet_address")
 
     if message.content.startswith('$tx_info') and message.channel.name in LISTENING_CHANNELS:
         try:
