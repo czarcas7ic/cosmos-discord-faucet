@@ -151,3 +151,5 @@ def gen_keypair():
     """:returns address: str, private_key: str, seed: str"""
     new_wallet = generate_wallet(hrp=BECH32_HRP)
     return new_wallet["address"], new_wallet["private_key"].hex(), new_wallet["seed"]
+
+gen_keypair()

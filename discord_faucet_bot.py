@@ -65,12 +65,14 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
+    print("hi")
     session = aiohttp.ClientSession()
     message_timestamp = time.time()
     requester = message.author
 
     # Do not listen to your own messages
     if message.author == client.user:
+        print("hi")
         return
 
     if message.content.startswith('$balance'):
@@ -199,4 +201,5 @@ async def on_message(message):
             await save_transaction_statistics(f'{transaction};{now.strftime("%Y-%m-%d %H:%M:%S")}')
             await session.close()
 
+print(TOKEN)
 client.run(TOKEN)
