@@ -1,6 +1,17 @@
 import configparser
 from tabulate import tabulate
-from cosmospy import Transaction, generate_wallet, privkey_to_address, seed_to_privkey
+import aiohttp
+import asyncio
+import logging 
+import sys
+
+from mospy import Account, Transaction
+from mospy.clients import HTTPClient
+from mospy.utils import seed_to_private_key
+
+
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 c = configparser.ConfigParser()
 c.read("config.ini", encoding='utf-8')
@@ -18,10 +29,18 @@ GAS_LIMIT             = int(c["TX"]["gas_limit"])
 FAUCET_PRIVKEY        = str(c["FAUCET"]["private_key"])
 FAUCET_SEED           = str(c["FAUCET"]["seed"])
 if FAUCET_PRIVKEY == "":
-    FAUCET_PRIVKEY = str(seed_to_privkey(FAUCET_SEED).hex())
+    FAUCET_PRIVKEY = str(seed_to_private_key(FAUCET_SEED).hex())
 
 FAUCET_ADDRESS    = str(c["FAUCET"]["faucet_address"])
 EXPLORER_URL      = str(c["OPTIONAL"]["explorer_url"])
+
+faucet_account = Account(
+    seed_phrase=FAUCET_SEED,
+    hrp="evmos",
+    slip44=60,
+    eth=True,
+)
+logger.info(f"faucet address {faucet_account.address} initialized")
 
 
 def coins_dict_to_string(coins: dict, table_fmt_: str = "") -> str:
@@ -57,37 +76,35 @@ async def async_request(session, url, data: str = ""):
         return f'error: in async_request()\n{url} {err}'
 
 
-async def get_addr_balance(session, addr: str):
+async def get_addr_balance(session, addr: str, denom: str):
     d = ""
     coins = {}
     try:
-        d = await async_request(session, url=f'{REST_PROVIDER}/cosmos/bank/v1beta1/balances/{addr}')
-        if "balances" in str(d):
-            for i in d["balances"]:
-                coins[i["denom"]] = i["amount"]
-            return coins
+        d = await async_request(session, url=f'{REST_PROVIDER}/cosmos/bank/v1beta1/balances/{addr}/by_denom?denom={denom}')
+        if "balance" in str(d):
+            return d["balance"]["amount"]
         else:
             return 0
     except Exception as addr_balancer_err:
-        print("get_addr_balance", d, addr_balancer_err)
+        logger.error("not able to query balance", d, addr_balancer_err)
 
 async def get_address_info(session, addr: str):
     try:
         """:returns sequence: int, account_number: int, coins: dict"""
-        d = await async_request(session, url=f'{REST_PROVIDER}/auth/accounts/{addr}')
-        print(d)
+        d = await async_request(session, url=f'{REST_PROVIDER}/cosmos/auth/v1beta1/accounts/{addr}')
 
-        if "result" in str(d):
-            acc_num = int(d["result"]["value"]["account_number"])
-            try:
-                seq     = int(d["result"]["value"]["sequence"]) or 0
-            except:
-                seq = 0
-            return seq, acc_num
+        acc_num = int(d['account']['base_account']['account_number'])
+        try:
+            seq = int(d['account']['base_account']['sequence']) or 0
+            
+        except:
+            seq = 0
+        logger.info(f"faucet address {addr} is on sequence {seq}")
+        return seq, acc_num
 
     except Exception as address_info_err:
         if VERBOSE_MODE == "yes":
-            print(address_info_err)
+            logger.error(address_info_err)
         return 0, 0
 
 
@@ -106,15 +123,35 @@ async def get_transaction_info(session, trans_id_hex: str):
         return f"error: {trans_id_hex} not found"
 
 
-async def send_tx(session, recipient: str, denom_lst: list, amount: list) -> str:
+async def send_tx(session, recipient: str, amount: int) -> str:
     url_ = f'{REST_PROVIDER}/cosmos/tx/v1beta1/txs'
     try:
-        sequence, acc_number = await get_address_info(session, FAUCET_ADDRESS)
-        txs = await gen_transaction(recipient_=recipient, sequence=sequence,
-                                    account_num=acc_number, denom=denom_lst, amount_=amount)
-        pushable_tx = txs.get_pushable()
-        result = async_request(session, url=url_, data=pushable_tx)
-        return await result
+        faucet_account.next_sequence, faucet_account.account_number = await get_address_info(session, FAUCET_ADDRESS)
+        
+        tx = Transaction(
+            account=faucet_account,
+            gas=GAS_LIMIT,
+            memo="The first faucet tx!",
+            chain_id=CHAIN_ID,
+        )
+
+        tx.set_fee(
+        denom="aevmos",
+        amount=GAS_PRICE
+        )
+
+        tx.add_msg(
+            tx_type="transfer",
+            sender=faucet_account,
+            receipient=recipient,
+            amount=amount,
+            denom=MAIN_DENOM,
+        )
+
+        client = HTTPClient(api=REST_PROVIDER)
+        tx_response =  client.broadcast_transaction(transaction=tx)
+        logger.info(tx_response)
+        return tx_response
 
     except Exception as reqErrs:
         if VERBOSE_MODE == "yes":
@@ -122,34 +159,10 @@ async def send_tx(session, recipient: str, denom_lst: list, amount: list) -> str
         return f"error: {reqErrs}"
 
 
-async def gen_transaction(recipient_: str, sequence: int, denom: list, account_num: int, amount_: list,
-                          gas: int = GAS_LIMIT, memo: str = "", chain_id_: str = CHAIN_ID,
-                          fee: int = GAS_PRICE, priv_key: str = FAUCET_PRIVKEY):
 
-    tx = Transaction(
-        privkey=bytes.fromhex(priv_key),
-        account_num=account_num,
-        sequence=sequence,
-        fee_denom=MAIN_DENOM,
-        fee=fee,
-        gas=gas,
-        memo=memo,
-        chain_id=chain_id_,
-        hrp=BECH32_HRP,
-	sync_mode="BROADCAST_MODE_SYNC"
-    )
-    if type(denom) is list:
-        for i, den in enumerate(denom):
-            tx.add_transfer(recipient=recipient_, amount=amount_[i], denom=den)
+# async def test():
+#     session = aiohttp.ClientSession()
+#     a = await send_tx(session, "evmos1u75yzpedd90wp0rqmxa6cz9qnwxa6g0ldp5k6l", "aevmos", "100")
+#     return ""
 
-    else:
-        tx.add_transfer(recipient=recipient_, amount=amount_[0], denom=denom[0])
-    return tx
-
-
-def gen_keypair():
-    """:returns address: str, private_key: str, seed: str"""
-    new_wallet = generate_wallet(hrp=BECH32_HRP)
-    return new_wallet["address"], new_wallet["private_key"].hex(), new_wallet["seed"]
-
-gen_keypair()
+# a = asyncio.run(test())

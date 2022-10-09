@@ -2,15 +2,14 @@ from asyncio import sleep
 import aiofiles as aiof
 import aiohttp
 import discord
-from cosmospy import privkey_to_address, seed_to_privkey
 import configparser
 import logging
 import time
 import datetime
 import sys
 import cosmos_api as api
-import evmospy
 
+from mospy.utils import seed_to_private_key
 
 # Turn Down Discord Logging
 disc_log = logging.getLogger('discord')
@@ -27,13 +26,14 @@ FAUCET_EMOJI = "🚰"
 
 VERBOSE_MODE       = str(c["DEFAULT"]["verbose"])
 BECH32_HRP         = str(c["CHAIN"]["BECH32_HRP"])
+MAIN_DENOM         = str(c["CHAIN"]["denomination"])
 DECIMAL            = float(c["CHAIN"]["decimal"])
 DENOMINATION_LST   = c["TX"]["denomination_list"].split(",")
-AMOUNT_TO_SEND_LST = c["TX"]["amount_to_send"].split(",")
+AMOUNT_TO_SEND     = c["TX"]["amount_to_send"]
 FAUCET_SEED        = str(c["FAUCET"]["seed"])
 FAUCET_PRIVKEY     = str(c["FAUCET"]["private_key"])
 if FAUCET_PRIVKEY == "":
-    FAUCET_PRIVKEY = str(seed_to_privkey(FAUCET_SEED).hex())
+    FAUCET_PRIVKEY = str(seed_to_private_key(FAUCET_SEED).hex())
 FAUCET_ADDRESS     = str(c["FAUCET"]["faucet_address"])
 EXPLORER_URL       = str(c["OPTIONAL"]["explorer_url"])
 if EXPLORER_URL != "":
@@ -182,24 +182,19 @@ async def on_message(message):
                 "address": requester_address,
                 "requester": requester,
                 "next_request": message_timestamp + REQUEST_TIMEOUT}
-            print(ACTIVE_REQUESTS)
+            logger.info(ACTIVE_REQUESTS)
 
-            coins = await api.get_addr_balance(session, FAUCET_ADDRESS)
-            seq, acc_num = await api.get_address_info(session, FAUCET_ADDRESS)
-            #print(f'{coins=} {seq=} {acc_num=}')
-            coins = {i: coins[i] for i in coins if int(coins[i]) > int(AMOUNT_TO_SEND_LST[0])}
+            balance = await api.get_addr_balance(session, FAUCET_ADDRESS, MAIN_DENOM)
+            #TODO his balance and his ALX/GRAV assets 
+            #TODO check faucet balance 
 
-            transaction = await api.send_tx(session, recipient=requester_address,
-                                            denom_lst=list(coins.keys()),
-                                            amount=[AMOUNT_TO_SEND_LST[0]] * len(list(coins.keys())))
-            logger.info(f'Transaction result:\n{transaction}')
-            print(transaction)
-           # iterate = transaction['tx_response']['txhash']
-            logger.info(f'TX SEND:\n{transaction}')
-
-            if "'code': 0" in str(transaction) and "txhash" in str(transaction):
-                await channel.send(f'{requester.mention}, {APPROVE_EMOJI} `$tx_info {transaction["tx_response"]["txhash"]}\n`')
-
+            transaction = await api.send_tx(session, recipient=requester_address, amount=AMOUNT_TO_SEND)
+            if "'code': 0" in str(transaction):
+                logger.info("code 0")
+            if "txhash" in str(transaction):
+                logger.info("txhash")
+            if "'code': 0" in str(transaction) and "hash" in str(transaction):
+                await channel.send(f'{requester.mention}, {APPROVE_EMOJI} `$tx_info {transaction["hash"]}\n`')
 
             else:
                 await channel.send(f'{requester.mention}, Can\'t send transaction. Try making another request'
@@ -210,5 +205,4 @@ async def on_message(message):
             await save_transaction_statistics(f'{transaction};{now.strftime("%Y-%m-%d %H:%M:%S")}')
             await session.close()
 
-print(TOKEN)
 client.run(TOKEN)

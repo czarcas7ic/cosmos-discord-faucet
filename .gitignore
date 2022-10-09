@@ -6,3 +6,5 @@ __pycache__/cosmos_api.cpython-39.pyc
 __pycache__/cosmos_api.cpython-38.pyc
 config.ini
 config copy.ini
+__pycache__/cosmos_api.cpython-310.pyc
+transactions.csv
