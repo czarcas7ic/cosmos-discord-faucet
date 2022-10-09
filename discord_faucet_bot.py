@@ -9,6 +9,7 @@ import time
 import datetime
 import sys
 import cosmos_api as api
+import evmospy
 
 
 # Turn Down Discord Logging
@@ -39,7 +40,7 @@ if EXPLORER_URL != "":
     EXPLORER_URL = f'{EXPLORER_URL}/transactions/'
 REQUEST_TIMEOUT    = int(c["FAUCET"]["request_timeout"])
 TOKEN              = str(c["FAUCET"]["discord_bot_token"])
-LISTENING_CHANNELS = f'{FAUCET_EMOJI}faucet'
+LISTENING_CHANNELS = str(c["FAUCET"]["channels_to_listen"])
 
 
 APPROVE_EMOJI = "✅"

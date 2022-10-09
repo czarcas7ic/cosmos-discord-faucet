@@ -1,5 +1,8 @@
 .idea
 venv/*
+.venv/*
 __pycache__/cosmos_api.cpython-39.pyc
 .env
 __pycache__/cosmos_api.cpython-38.pyc
+config.ini
+config copy.ini
