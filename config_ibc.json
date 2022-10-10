@@ -1,0 +1,62 @@
+{
+    "ibc/A4DB47A9D3CF9A068D454513891B526702455D3EF08FB9EB558C561F9DC2B701":
+    {
+        "name": "ATOM",
+        "coingeckoId": "cosmos",
+        "exponent": 6
+    }, 
+
+    "ibc/448C1061CE97D86CC5E86374CD914870FB8EBA16C58661B5F1D3F46729A2422D":
+    {
+       "name": "JUNO", 
+       "coingeckoId": "juno-network",
+       "exponent": 6
+    }, 
+
+   "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518":
+    {    
+      "name": "OSMO",
+      "coingeckoId": "osmosis",
+      "exponent": 6
+    }, 
+
+    "ibc/63C53CBDF471D4E867366ABE2E631197257118D1B2BEAD1946C8A408F96464C3":
+    {
+        "name": "axlUSDC",
+        "coingeckoId": "usd-coin",
+        "exponent": 6
+    }, 
+    "ibc/C834CD421B4FD910BBC97E06E86B5E6F64EA2FE36D6AE0E4304C2E1FB1E7333C":
+    {
+        "name": "axlWBTC",
+        "coingeckoId": "wrapped-bitcoin",
+        "exponent": 8
+    }, 
+    "ibc/356EDE917394B2AEF7F915EB24FA683A0CCB8D16DD4ECCEDC2AD0CEC6B66AC81": 
+    {
+        "name": "axlWETH",
+        "coingeckoId": "weth",
+        "exponent": 18
+    },
+
+   "ibc/350B6DC0FF48E3BDB856F40A8259909E484259ED452B3F4F39A0FEF874F30F61":
+   {
+       "name": "gWBTC",
+       "coingeckoId": "wrapped-bitcoin",
+       "exponent": 8
+
+   }, 
+   "ibc/6B3FCE336C3465D3B72F7EFB4EB92FC521BC480FE9653F627A0BD0237DF213F3":
+   {
+       "name": "gWETH",
+       "coingeckoId": "weth",
+       "exponent": 18
+   }, 
+   "ibc/693989F95CF3279ADC113A6EF21B02A51EC054C95A9083F2E290126668149433": 
+   {
+       "name": "gUSDC",
+       "coingeckoId": "usd-coin",
+       "exponent": 8
+   }
+
+}

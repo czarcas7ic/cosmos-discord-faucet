@@ -8,3 +8,4 @@ config.ini
 config copy.ini
 __pycache__/cosmos_api.cpython-310.pyc
 transactions.csv
+__pycache__/cosmos_api.cpython-310.pyc

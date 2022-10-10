@@ -4,6 +4,7 @@ import aiohttp
 import asyncio
 import logging 
 import sys
+import time
 
 from mospy import Account, Transaction
 from mospy.clients import HTTPClient
@@ -76,7 +77,7 @@ async def async_request(session, url, data: str = ""):
         return f'error: in async_request()\n{url} {err}'
 
 
-async def get_addr_balance(session, addr: str, denom: str):
+async def get_addr_evmos_balance(session, addr: str, denom: str):
     d = ""
     coins = {}
     try:
@@ -87,6 +88,20 @@ async def get_addr_balance(session, addr: str, denom: str):
             return 0
     except Exception as addr_balancer_err:
         logger.error("not able to query balance", d, addr_balancer_err)
+
+async def get_addr_all_balance(session, addr: str):
+    d = ""
+    coins = {}
+    try:
+        d = await async_request(session, url=f'{REST_PROVIDER}/cosmos/bank/v1beta1/balances/{addr}')
+        if "balances" in str(d):
+            for i in d["balances"]:
+                coins[i["denom"]] = i["amount"]
+            return coins
+        else:
+            return 0
+    except Exception as addr_balancer_err:
+        print("get_addr_balance", d, addr_balancer_err)
 
 async def get_address_info(session, addr: str):
     try:
@@ -115,8 +130,8 @@ async def get_node_status(session):
 
 async def get_transaction_info(session, trans_id_hex: str):
     url = f'{REST_PROVIDER}/cosmos/tx/v1beta1/txs/{trans_id_hex}'
+    time.sleep(2)
     resp = await async_request(session, url=url)
-    print(resp)
     if 'height' in str(resp):
         return resp
     else:
