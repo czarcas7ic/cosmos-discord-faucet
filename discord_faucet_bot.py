@@ -12,6 +12,9 @@ import cosmos_api as api
 import evmospy.pyevmosaddressconverter as converter
 import json
 import time
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 
 from mospy.utils import seed_to_private_key
@@ -35,19 +38,14 @@ MAIN_DENOM         = str(c["CHAIN"]["denomination"])
 DECIMAL            = float(c["CHAIN"]["decimal"])
 DENOMINATION_LST   = c["TX"]["denomination_list"].split(",")
 AMOUNT_TO_SEND     = c["TX"]["amount_to_send"]
-FAUCET_SEED        = str(c["FAUCET"]["seed"])
-FAUCET_PRIVKEY     = str(c["FAUCET"]["private_key"])
-if FAUCET_PRIVKEY == "":
-    FAUCET_PRIVKEY = str(seed_to_private_key(FAUCET_SEED).hex())
 FAUCET_ADDRESS     = str(c["FAUCET"]["faucet_address"])
 EXPLORER_URL       = str(c["OPTIONAL"]["explorer_url"])
 if EXPLORER_URL != "":
     EXPLORER_URL = f'{EXPLORER_URL}/txs/'
 REQUEST_TIMEOUT    = int(c["FAUCET"]["request_timeout"])
-TOKEN              = str(c["FAUCET"]["discord_bot_token"])
+TOKEN              = os.getenv("TOKEN")
 LISTENING_CHANNELS = str(c["FAUCET"]["channels_to_listen"])
 MIN_VALUE          = float(c["OPTIONAL"]["min_dollar_value_threshold"])
-
 
 APPROVE_EMOJI = "✅"
 REJECT_EMOJI = "🚫"

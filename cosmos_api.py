@@ -1,15 +1,17 @@
 import configparser
 from tabulate import tabulate
-import aiohttp
-import asyncio
 import logging 
 import sys
 import time
+import os
 
 from mospy import Account, Transaction
 from mospy.clients import HTTPClient
 from mospy.utils import seed_to_private_key
+from dotenv import load_dotenv
 
+#import aiohttp
+#import asyncio
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -17,6 +19,7 @@ logger = logging.getLogger(__name__)
 c = configparser.ConfigParser()
 c.read("config.ini", encoding='utf-8')
 
+load_dotenv()
 # Load data from config
 VERBOSE_MODE          = str(c["DEFAULT"]["verbose"])
 DECIMAL               = float(c["CHAIN"]["decimal"])
@@ -27,8 +30,8 @@ CHAIN_ID              = str(c["CHAIN"]["id"])
 BECH32_HRP            = str(c["CHAIN"]["BECH32_HRP"])
 GAS_PRICE             = int(c["TX"]["gas_price"])
 GAS_LIMIT             = int(c["TX"]["gas_limit"])
-FAUCET_PRIVKEY        = str(c["FAUCET"]["private_key"])
-FAUCET_SEED           = str(c["FAUCET"]["seed"])
+FAUCET_PRIVKEY        = os.getenv("PRIVATE_KEY")
+FAUCET_SEED           = os.getenv("FAUCET_SEED")
 if FAUCET_PRIVKEY == "":
     FAUCET_PRIVKEY = str(seed_to_private_key(FAUCET_SEED).hex())
 
@@ -41,6 +44,7 @@ faucet_account = Account(
     slip44=60,
     eth=True,
 )
+print(FAUCET_SEED)
 logger.info(f"faucet address {faucet_account.address} initialized")
 
 
@@ -172,7 +176,6 @@ async def send_tx(session, recipient: str, amount: int) -> str:
         if VERBOSE_MODE == "yes":
             print(f'error in send_txs() {REST_PROVIDER}: {reqErrs}')
         return f"error: {reqErrs}"
-
 
 
 # async def test():

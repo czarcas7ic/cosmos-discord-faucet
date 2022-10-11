@@ -1,6 +1,14 @@
+Hi there! Ready for the DeFi Kickoff? 🚀
+
+**These are the faucet requirements:** 🤝
+👉 You can only request funds once a week 
+👉 You must have at least $50 worth of bridged tokens deposited on the asset page (https://app.evmos.org/assets)
+👉 You'll get 0.3 Evmos
+👉 Funds are tracked and if not used for the conversion, you'll be banned
+
 **List of available commands:**
 1. Request coins through the faucet
-`$request osmo1a5zxevtdwhy4ddj662rl8xqyqsnrdmv7007g32`
+`$request evmos14q8vu02v3npvnrxkt7te05tx6ral53rx4hh80f`
 
 2. Displays the current status of the node where faucet is running
 `$faucet_status`
@@ -9,7 +17,7 @@
 `$faucet_address`
 
 4. Show transaction information for a specific transaction ID
-`$tx_info 5C501EA776F66ADB6A5A3C13D876382FFE431A461E1AA7AD7A19D70C6B765A97`
+`$tx_info 6C30051277E8461C751CD1A0421416B4E94AB0E42BEC229E28C7FE569A1C25D9`
 
 5. Show address balance
-`$balance osmo1a5zxevtdwhy4ddj662rl8xqyqsnrdmv7007g32`
+`$balance evmos14q8vu02v3npvnrxkt7te05tx6ral53rx4hh80f`
