@@ -2,11 +2,11 @@
 Description="Discord faucet bot"
 
 [Service]
-User=root
-WorkingDirectory=/root/osmosis-discord-faucet
-ExecStart=/root/osmosis-discord-faucet/venv/bin/python3 discord_faucet_bot.py
+User=evmosfaucet
+WorkingDirectory=/home/evmosfaucet/evmos-discord-faucet
+ExecStart=/home/evmosfaucet/evmos-discord-faucet/.venv/bin/python3 discord_faucet_bot.py
 Restart=always
 RestartSec=5
-
+EnvironmentFile=/home/evmosfaucet/evmos-discord-faucet/.env
 [Install]
 WantedBy=multi-user.target
