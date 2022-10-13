@@ -57,7 +57,7 @@ intents.message_content = True
 
 client = discord.Client(intents=intents)
 
-with open("help-msg.txt", "r", encoding="utf-8") as help_file:
+with open("info-msg.txt", "r", encoding="utf-8") as help_file:
     help_msg = help_file.read()
 
 

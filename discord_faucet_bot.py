@@ -42,6 +42,7 @@ DECIMAL            = float(c["CHAIN"]["decimal"])
 DENOMINATION_LST   = c["TX"]["denomination_list"].split(",")
 AMOUNT_TO_SEND     = c["TX"]["amount_to_send"]
 FAUCET_ADDRESS     = str(c["FAUCET"]["faucet_address"])
+FAUCET_MULTISIG_ADDRESS     = str(c["FAUCET"]["faucet_multisig_address"])
 EXPLORER_URL       = str(c["OPTIONAL"]["explorer_url"])
 if EXPLORER_URL != "":
     EXPLORER_URL = f'{EXPLORER_URL}/txs/'
@@ -56,10 +57,10 @@ ACTIVE_REQUESTS = {}
 intents = discord.Intents.default()
 intents.message_content = True
 
-bot = commands.Bot(intents=discord.Intents.all() , command_prefix= "$" , description='The Best Bot For the Best User!')
+bot = commands.Bot(intents=discord.Intents.all() , command_prefix= "$" , description='Funded by the community for the community')
 
 
-with open("help-msg.txt", "r", encoding="utf-8") as help_file:
+with open("info-msg.txt", "r", encoding="utf-8") as help_file:
     help_msg = help_file.read()
 
 ##FUNCTION
@@ -84,14 +85,15 @@ async def submit_tx_info(session, message, requester, txhash = ""):
                 denom_ = tx['tx']['body']['messages'][0]['amount'][0]['denom']
                 amount_ = tx['tx']['body']['messages'][0]['amount'][0]['amount']
 
-                tx = f'{requester} {(float(AMOUNT_TO_SEND)/DECIMAL):.18f} Evmos was successfully transfered to your wallet' \
+                tx = f'{APPROVE_EMOJI} - {requester}' \
+                    f'{(float(AMOUNT_TO_SEND)/DECIMAL):.18f} Evmos was successfully transfered to your wallet' \
                     '```' \
                     f'From:         {from_}\n' \
                     f'To (BECH32):  {to_}\n' \
                     f'To (HEX):     {converter.evmos_to_eth(to_)}\n' \
                     f'Amount:       {amount_} {denom_} ```' \
                     f'{EXPLORER_URL}{txhash}'
-                    #f'Amount:  {sended_coins}```'
+
                 await message.channel.send(tx)
                 await session.close()
             else:
@@ -102,11 +104,11 @@ async def submit_tx_info(session, message, requester, txhash = ""):
             await session.close()
 
     except Exception as e: 
-            logger.error("Can't get transaction info {")
+            logger.error(f"Can't get transaction info {e}")
             await message.channel.send(f"Can't get transaction info of your request {message.content}")
 
 async def requester_onchain_requirements(session,address):
-    #verify his balance
+    #verify requester balance
     total_value = 0
 
     requester_balance = await api.get_addr_all_balance(session, address)
@@ -147,18 +149,14 @@ async def on_command_error(ctx, error):
 	if isinstance(error, commands.CommandOnCooldown):
 		await ctx.send(
             f'{REJECT_EMOJI} - {ctx.author.mention}\n'
-            f'You already requested funds from the faucet {round(error.retry_after, 2)} seconds left before you can try again'
+            f'You already executed the request command. I am only allowed to accept this once all {REQUEST_TIMEOUT/86400} days as a security measure. \m'
+            f'Please retry in {round((error.retry_after/86400), 2)} days. In case of urgency, please reach out to the mods for dust.'
             )
 
-#TODO read request cooldown from config file
+
 @bot.command(name='balance')
-@commands.cooldown(1, 10, commands.BucketType.user)
 async def balance(ctx):
     session = aiohttp.ClientSession()
-    requester = ctx.author
-
-    logger.info(f"command: {ctx.command.name}")
-
     address = str(ctx.message.content).replace("$balance", "").replace(" ", "").lower()
     if address.startswith("0x") and len(address)== 42: 
         address = converter.eth_to_evmos(address)
@@ -171,7 +169,7 @@ async def balance(ctx):
             await session.close()
 
         else:
-            await ctx.channel.send(f'{ctx.author.mention} account is not initialized with evmos (balance is empty)')
+            await ctx.channel.send(f'{ctx.author.mention} your account is not initialized with evmos (balance is empty)')
             await session.close()
 
 @bot.command(name='info')
@@ -202,22 +200,27 @@ async def status(ctx):
     except Exception as statusErr:
         logger.error(statusErr)
 
-#TODO: better faucet address response (one multisig, one hotwallet)
+
 @bot.command(name='faucet_address')
 async def faucet_address(ctx):
     session = aiohttp.ClientSession()
     try:
-        await ctx.send(FAUCET_ADDRESS)
+        await ctx.send(
+            f'My runtime address is: \n'
+            f'`{FAUCET_ADDRESS}`\n'
+            f'My reserve multisig address is: \n'
+            f'`{FAUCET_MULTISIG_ADDRESS}`\n'
+        )         
         await session.close()
     except:
-        logging.error("Can't send message $faucet_address")
+        logging.error("Can't send message $faucet_address. Please report the incident to one of the mods.")
 
-#TODO: better message with approve emoji
 @bot.command(name='tx_info')
 async def tx_info(ctx):
     session = aiohttp.ClientSession()
     await submit_tx_info(session, ctx.message, ctx.author.mention)
 
+@commands.cooldown(1, REQUEST_TIMEOUT, commands.BucketType.user)
 @bot.command(name='request')
 async def request(ctx):
     session = aiohttp.ClientSession()

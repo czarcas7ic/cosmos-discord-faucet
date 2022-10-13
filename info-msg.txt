@@ -1,13 +1,13 @@
 Hi there! Ready for the DeFi Kickoff? 🚀
 
-**These are the faucet requirements:** 🤝
+Before you continue, please read the requirements carefully
 👉 You can only request funds once a week 
 👉 You must have at least $50 worth of bridged tokens deposited on the asset page (https://app.evmos.org/assets)
 👉 You'll get 0.3 Evmos
-👉 Funds are tracked and if not used for the conversion, you'll be banned
+👉 Funds are tracked and if not used for the conversion you'll be banned
 
-**List of available commands:**
-1. Request coins through the faucet
+🎯 List of available commands:
+1. Request coins through the faucet. This action can only be executed once a week
 `$request evmos14q8vu02v3npvnrxkt7te05tx6ral53rx4hh80f`
 
 2. Displays the current status of the node where faucet is running

@@ -1,6 +1,7 @@
 import httpx # optional
 from mospy import Account, Transaction
 from mospy.clients import HTTPClient
+from mospy.utils import pubkey_to_eth_address, pubkey_to_address
 
 account = Account(
     seed_phrase="enlist jar utility clog satoshi advance worth hundred style lemon know faith quick wedding decline vital broom approve patrol history dinosaur area kangaroo cereal",
@@ -30,7 +31,12 @@ tx.add_msg(
     denom="aevmos",
 )
 
-client = HTTPClient(api="https://api.evmos.interbloc.org")
-tx_response = client.broadcast_transaction(transaction=tx)
 
-print(tx_response)
+print(pubkey_to_address(pubkey="AxH1YFOmDTONvzMbCDCAyIA1B+tBu7GKus5Q+scMzoxn",hrp="evmos"))
+
+# client = HTTPClient(api="https://api.evmos.interbloc.org")
+# tx_response = client.broadcast_transaction(transaction=tx)
+
+# print(tx_response)
+
+

@@ -10,3 +10,4 @@ __pycache__/cosmos_api.cpython-310.pyc
 transactions.csv
 __pycache__/cosmos_api.cpython-310.pyc
 __pycache__/cosmos_api.cpython-310.pyc
+bin/evmosd
