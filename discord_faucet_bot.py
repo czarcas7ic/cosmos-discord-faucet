@@ -5,15 +5,12 @@ import aiohttp
 import discord
 import configparser
 import logging
-import time
 import datetime
 import sys
 import cosmos_api as api
 import evmospy.pyevmosaddressconverter as converter
 import json
-import time
 import os
-from discord.ext.commands import cooldown, BucketType
 from discord.ext import commands
 
 from dotenv import load_dotenv
@@ -45,7 +42,7 @@ FAUCET_ADDRESS     = str(c["FAUCET"]["faucet_address"])
 FAUCET_MULTISIG_ADDRESS     = str(c["FAUCET"]["faucet_multisig_address"])
 EXPLORER_URL       = str(c["OPTIONAL"]["explorer_url"])
 if EXPLORER_URL != "":
-    EXPLORER_URL = f'{EXPLORER_URL}/txs/'
+    EXPLORER_URL = f'{EXPLORER_URL}'
 REQUEST_TIMEOUT    = int(c["FAUCET"]["request_timeout"])
 TOKEN              = os.getenv("TOKEN")
 LISTENING_CHANNELS = str(c["FAUCET"]["channels_to_listen"])
@@ -78,21 +75,20 @@ async def submit_tx_info(session, message, requester, txhash = ""):
         if len(txhash) == 64:
 
             tx = await api.get_transaction_info(session, txhash)
-            logger.info(f"requested {txhash} details")
+            logger.info(f"requested txhash {txhash} details")
             if "amount" and "fee" in str(tx):
                 from_   = tx['tx']['body']['messages'][0]['from_address']
                 to_     = tx['tx']['body']['messages'][0]['to_address']
-                denom_ = tx['tx']['body']['messages'][0]['amount'][0]['denom']
                 amount_ = tx['tx']['body']['messages'][0]['amount'][0]['amount']
 
-                tx = f'{APPROVE_EMOJI} - {requester}' \
-                    f'{(float(AMOUNT_TO_SEND)/DECIMAL):.18f} Evmos was successfully transfered to your wallet' \
+                tx = f'{APPROVE_EMOJI} - {requester}\n' \
+                    f'{await api.aevmos_to_evmos(amount_)} evmos successfully transfered to {to_}' \
                     '```' \
                     f'From:         {from_}\n' \
                     f'To (BECH32):  {to_}\n' \
                     f'To (HEX):     {converter.evmos_to_eth(to_)}\n' \
-                    f'Amount:       {amount_} {denom_} ```' \
-                    f'{EXPLORER_URL}{txhash}'
+                    f'Amount:       {await api.aevmos_to_evmos(amount_)} evmos ```' \
+                    f'Explorer => {EXPLORER_URL}/txs/{txhash}'
 
                 await message.channel.send(tx)
                 await session.close()
@@ -139,6 +135,7 @@ async def requester_onchain_requirements(session,address):
     else: 
         return False
 
+
 @bot.event
 async def on_ready():
     logger.info(f'Logged in as {bot.user}')
@@ -149,7 +146,7 @@ async def on_command_error(ctx, error):
 	if isinstance(error, commands.CommandOnCooldown):
 		await ctx.send(
             f'{REJECT_EMOJI} - {ctx.author.mention}\n'
-            f'You already executed the request command. I am only allowed to accept this once all {REQUEST_TIMEOUT/86400} days as a security measure. \m'
+            f'You already executed the request command. As a security measure, users can only request funds all {REQUEST_TIMEOUT/86400} days. \n'
             f'Please retry in {round((error.retry_after/86400), 2)} days. In case of urgency, please reach out to the mods for dust.'
             )
 
@@ -162,10 +159,12 @@ async def balance(ctx):
         address = converter.eth_to_evmos(address)
 
     if address[:len(BECH32_HRP)] == BECH32_HRP:
-        coins = await api.get_addr_all_balance(session, address)
-        if len(coins["aevmos"]) >= 1:
-            await ctx.channel.send(f'{ctx.author.mention}\n'
-                                        f'```{api.coins_dict_to_string(coins, "grid")}```')
+        amount = await api.get_addr_evmos_balance(session, address, MAIN_DENOM)
+        if float(amount) > 0:
+            await ctx.channel.send(
+                f'⚖️ - {ctx.author.mention}\nYour current Evmos balance\n'
+                f'```{api.coins_dict_to_string({"evmos": amount}, "grid")}```\n'
+                f'To check your IBC token balance please open the block explorer: {EXPLORER_URL}/account/{address}')
             await session.close()
 
         else:
@@ -206,9 +205,10 @@ async def faucet_address(ctx):
     session = aiohttp.ClientSession()
     try:
         await ctx.send(
-            f'My runtime address is: \n'
-            f'`{FAUCET_ADDRESS}`\n'
-            f'My reserve multisig address is: \n'
+            f'{FAUCET_EMOJI} - **Bot address** \n \n'
+            f'The bots active address is: \n'
+            f'`{FAUCET_ADDRESS}`\n \n'
+            f'The bots reserve multisig address is: \n'
             f'`{FAUCET_MULTISIG_ADDRESS}`\n'
         )         
         await session.close()
@@ -241,7 +241,7 @@ async def request(ctx):
     if not min_value: 
         await ctx.send(
             f'{REJECT_EMOJI} - {ctx.author.mention}\n'
-            f'You must at least have $50 worth of ibc-tokens ready to be converted.Eligible ibc-tokens are the ones participating in the DeFi kickoff:\n'
+            f'You must at least have $50 worth of ibc-tokens ready to be converted. Eligible ibc-tokens are the ones participating in the DeFi kickoff:\n'
             f'```ATOM, JUNO, OSMO, axlWBTC, axlUSDC, axlWETH, gWBTC, gUSDC, gWETH```'
             f'Deposit assets first on https://app.evmos.org/assets before requesting conversion fees from the faucet')
         await session.close()
@@ -259,18 +259,18 @@ async def request(ctx):
         
     #check if faucet has enough balance
     faucet_balance = float(await api.get_addr_evmos_balance(session, FAUCET_ADDRESS, MAIN_DENOM))
-    if faucet_balance < float(AMOUNT_TO_SEND):  
+    amount_to_send_evmos = await api.aevmos_to_evmos(AMOUNT_TO_SEND)
+    if faucet_balance < float(amount_to_send_evmos):  
         await ctx.send(
-            f'{REJECT_EMOJI} - {ctx.author.mention} - Faucet ran out of funds. \n'
+            f'{REJECT_EMOJI} - {ctx.author.mention} \nFaucet ran out of funds. \n'
             f'Please reach out to the mods to fill it up.')
         await session.close()
         return
         
-    #TODO mention has {} brackets
     transaction = await api.send_tx(session, recipient=requester_address, amount=AMOUNT_TO_SEND)
 
     if "'code': 0" in str(transaction) and "hash" in str(transaction):
-        await submit_tx_info(session, ctx.message, {ctx.author.mention} ,transaction["hash"])
+        await submit_tx_info(session, ctx.message, ctx.author.mention ,transaction["hash"])
         logger.info("successfully send tx info to discord")
 
     else:

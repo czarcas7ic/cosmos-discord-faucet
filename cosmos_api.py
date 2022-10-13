@@ -10,8 +10,10 @@ from mospy.clients import HTTPClient
 from mospy.utils import seed_to_private_key
 from dotenv import load_dotenv
 
-#import aiohttp
-#import asyncio
+import aiohttp
+import asyncio
+
+from decimal import Decimal
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -49,16 +51,15 @@ logger.info(f"faucet address {faucet_account.address} initialized")
 
 
 def coins_dict_to_string(coins: dict, table_fmt_: str = "") -> str:
-    headers = ["Token", "Amount (wei)"]
+    headers = ["Token", "Amount"]
     hm = []
     """
     :param table_fmt_: grid | pipe | html
     :param coins: {'clink': '100000000000000000000', 'chot': '100000000000000000000'}
     :return: str
     """
-    for i in range(len(coins)):
-        print(list(coins.values())[i], type(list(coins.values())[i]))
-        hm.append([list(coins.keys())[i], list(coins.values())[i]])
+    for i in coins:
+        hm.append([i, coins[i]])
     d = tabulate(hm, tablefmt=table_fmt_, headers=headers)
     return d
 
@@ -87,7 +88,7 @@ async def get_addr_evmos_balance(session, addr: str, denom: str):
     try:
         d = await async_request(session, url=f'{REST_PROVIDER}/cosmos/bank/v1beta1/balances/{addr}/by_denom?denom={denom}')
         if "balance" in str(d):
-            return d["balance"]["amount"]
+            return await aevmos_to_evmos(d["balance"]["amount"])
         else:
             return 0
     except Exception as addr_balancer_err:
@@ -101,6 +102,11 @@ async def get_addr_all_balance(session, addr: str):
         if "balances" in str(d):
             for i in d["balances"]:
                 coins[i["denom"]] = i["amount"]
+                
+                if i["denom"] == "aevmos":
+                    coins["evmos"] = coins.pop(i["denom"])
+                    coins["evmos"] = await aevmos_to_evmos(i["amount"])
+
             return coins
         else:
             return 0
@@ -134,7 +140,7 @@ async def get_node_status(session):
 
 async def get_transaction_info(session, trans_id_hex: str):
     url = f'{REST_PROVIDER}/cosmos/tx/v1beta1/txs/{trans_id_hex}'
-    time.sleep(2)
+    time.sleep(6)
     resp = await async_request(session, url=url)
     if 'height' in str(resp):
         return resp
@@ -177,6 +183,11 @@ async def send_tx(session, recipient: str, amount: int) -> str:
             print(f'error in send_txs() {REST_PROVIDER}: {reqErrs}')
         return f"error: {reqErrs}"
 
+async def aevmos_to_evmos(aevmos):
+    aevmos_ = float(aevmos)
+    amount_evmos = aevmos_/DECIMAL
+    logger.info(f"Converted {aevmos_} aEvmos to Evmos {amount_evmos}")
+    return f'{amount_evmos}'
 
 # async def test():
 #     session = aiohttp.ClientSession()

@@ -14,6 +14,8 @@ import json
 import time
 import os
 from discord.ext.commands import cooldown, BucketType
+from decimal import Decimal
+
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -87,7 +89,7 @@ async def submit_tx_info(session, message, requester, txhash = ""):
                     f'From:         {from_}\n' \
                     f'To (BECH32):  {to_}\n' \
                     f'To (HEX):     {converter.evmos_to_eth(to_)}\n' \
-                    f'Amount:       {amount_} {denom_} ```' \
+                    f'Amount:       {Decimal(amount_/10**DECIMAL).normalize()} {denom_} ```' \
                     f'{EXPLORER_URL}{txhash}'
                     #f'Amount:  {sended_coins}```'
                 await message.channel.send(tx)
