@@ -7,10 +7,12 @@ The bot will be available on the Discord faucet channel of Evmos. To minimize an
 ## Funds 
 Onboarding 20,000 users is a likely scenario thus we ask for 6,000 Evmos to be used for dust. Unused Evmos will be returned within 6 months. Code refactoring, integration and management of the bot is volunteer effort. 
 ## Gnosis Safe (Multisig)
-Address: 
-2/3 confirmation from: 
+Address: evmos1clc75pp4sqx4kus3r79uq88d08vc25dkq6483h, 2/4 confirmation: 
 - GV | Swiss Staking 
 - Dev_D (mod)
-- Benny (mod)
+- Benny (mod / gov ws)
+- Sigmung | Qubelabs
 ## Commonwealth
 This proposal was discussed on [Commonwealth](https://commonwealth.im/evmos/discussion/7208-faucet-for-defi-kickoff)
+
+

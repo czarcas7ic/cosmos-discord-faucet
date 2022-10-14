@@ -1,5 +1,5 @@
-# osmosis-discord-faucet
-Discord faucet bot for Osmosis  
+# evmos-discord-faucet
+Discord faucet bot for evmos  
 
 
 <details>
@@ -27,7 +27,7 @@ Transaction status explanation:
 
 
 ## Requirements
-- python3.6+  
+- python3.9.5+  
 - Cosmos REST server (default port 1317)  
 - Cosmos RPC server  (default port 26657)
 
@@ -36,7 +36,7 @@ Transaction status explanation:
 ```bash
 apt update \
 && apt install -y python3-pip python3-venv git tmux \
-&& git clone https://github.com/czarcas7ic/osmosis-discord-faucet.git \
+&& git clone https://github.com/creeea/evmos-discord-faucet.git \
 && cd evmos-discord-faucet \
 && python3 -m venv venv \
 && source venv/bin/activate \
@@ -45,24 +45,27 @@ apt update \
 2. [Create Discord token](https://github.com/reactiflux/discord-irc/wiki/Creating-a-discord-bot-&-getting-a-token)  
 3. Fill in config.ini  
 4. Invite the bot to your channel  
-5. Start Osmosis Daemon and sync the node  
+5. Start Evmos Daemon and sync the node  
 
 
 ## How to run  
 Start faucet bot  
-```
-tmux new -s discord_faucet_bot -d cd ~/osmosis-discord-faucet && source venv/bin/activate && python3 discord_faucet_bot.py
+```bash
+tmux new -s discord_faucet_bot -d cd ~/evmos-discord-faucet && source venv/bin/activate 
+cp env_sample .env
+#set TOKEN and FAUCET_SEED in .env
+python3 discord_faucet_bot.py
 ```  
   
 ### Alternatively, the bot can be run through systemd:  
 - If necessary, change the username and the path to the script folder in `discord-faucet-bot.service`  
-
+- Make sure env file is correctly set 
 - Start the service  
 ```
-ln -s $HOME/osmosis-discord-faucet/osmosis-faucet-bot.service /etc/systemd/system/ \
+ln -s $HOME/evmos-discord-faucet/evmos-faucet-bot.service /etc/systemd/system/ \
 && systemctl daemon-reload \
-&& systemctl enable osmosis-faucet-bot.service \
-&& systemctl start osmosis-faucet-bot.service \
-&& systemctl status osmosis-faucet-bot.service
+&& systemctl enable evmos-faucet-bot.service \
+&& systemctl start evmos-faucet-bot.service \
+&& systemctl status evmos-faucet-bot.service
 ```  
 
