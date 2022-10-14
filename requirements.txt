@@ -19,3 +19,4 @@ tabulate==0.8.10
 mospy-wallet==0.3.3
 python-dotenv==0.21.0
 evmospy==1.0.2
+charset-normalizer

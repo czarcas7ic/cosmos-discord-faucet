@@ -1,23 +1,29 @@
 Hi there! Ready for the DeFi Kickoff? 🚀
 
-Before you continue, please read the requirements carefully
-👉 You can only request funds once a week 
-👉 You must have at least $50 worth of bridged tokens deposited on the asset page (https://app.evmos.org/assets)
-👉 You'll get 0.3 Evmos
-👉 Funds are tracked and if not used for the conversion you'll be banned
-
+Please read **all** the available commands carefully. 
 🎯 List of available commands:
-1. Request coins through the faucet. This action can only be executed once a week
+
+**1. Request 0.05 Evmos from the faucet for transfer or swap activities**
 `$request evmos14q8vu02v3npvnrxkt7te05tx6ral53rx4hh80f`
 
-2. Displays the current status of the node where faucet is running
+⚠️ This action can only be executed twice a day
+⚠️ Only request if you own less than 0.05 Evmos and cannot pay for simple transaction fees
+
+**2. Request 0.3 Evmos from the faucet for conversion (ibc <> erc20) purposes**
+`$request-conversion evmos14q8vu02v3npvnrxkt7te05tx6ral53rx4hh80f`
+
+⚠️ This action can only be executed once all 48 hours
+⚠️ You need at least $30 of IBC tokens on the asset page before you can request conversion dust
+⚠️ Funds are tracked
+
+**3. Displays the current status of the node where faucet is running**
 `$faucet_status`
 
-3. Show faucet address
+**4. Show faucet address**
 `$faucet_address`
 
-4. Show transaction information for a specific transaction ID
+**5. Show transaction information for a specific transaction ID**
 `$tx_info 6C30051277E8461C751CD1A0421416B4E94AB0E42BEC229E28C7FE569A1C25D9`
 
-5. Show address balance
+**6. Show address balance**
 `$balance evmos14q8vu02v3npvnrxkt7te05tx6ral53rx4hh80f`
