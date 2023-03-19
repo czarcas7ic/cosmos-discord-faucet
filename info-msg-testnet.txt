@@ -1,0 +1,19 @@
+Hi there! Ready for the DeFi Kickoff? 🚀
+
+Please read **all** the available commands carefully. 
+🎯 List of available commands for EVMOS TESTNET:
+
+**1. Request 100 Evmos from the faucet for transfer or swap activities**
+`$request evmos14q8vu02v3npvnrxkt7te05tx6ral53rx4hh80f`
+
+**3. Displays the current status of the node where faucet is running**
+`$faucet_status`
+
+**4. Show faucet address**
+`$faucet_address`
+
+**5. Show transaction information for a specific transaction ID**
+`$tx_info 6C30051277E8461C751CD1A0421416B4E94AB0E42BEC229E28C7FE569A1C25D9`
+
+**6. Show address balance**
+`$balance evmos14q8vu02v3npvnrxkt7te05tx6ral53rx4hh80f`

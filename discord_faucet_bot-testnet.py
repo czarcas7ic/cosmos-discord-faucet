@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 # Load config
 c = configparser.ConfigParser()
-c.read("config.ini")
+c.read("config_testnet.ini")
 FAUCET_EMOJI = "🚰"
 
 VERBOSE_MODE                = str(c["DEFAULT"]["verbose"])
@@ -35,27 +35,23 @@ MAIN_DENOM                  = str(c["CHAIN"]["denomination"])
 DECIMAL                     = float(c["CHAIN"]["decimal"])
 DENOMINATION_LST            = c["TX"]["denomination_list"].split(",")
 AMOUNT_TO_SEND              = c["TX"]["amount_to_send"]
-AMOUNT_TO_SEND_CONVERSION   = c["TX"]["amount_to_send_conversion"]
 FAUCET_ADDRESS              = str(c["FAUCET"]["faucet_address"])
-FAUCET_MULTISIG_ADDRESS     = str(c["FAUCET"]["faucet_multisig_address"])
 EXPLORER_URL                = str(c["OPTIONAL"]["explorer_url"])
 if EXPLORER_URL             != "":
     EXPLORER_URL            = f'{EXPLORER_URL}'
-REQUEST_TIMEOUT_CONVERSION  = int(c["FAUCET"]["request_conversion_timeout"])
 REQUEST_TIMEOUT             = int(c["FAUCET"]["request_timeout"])
 TOKEN                       = os.getenv("TOKEN")
-MIN_VALUE                   = float(c["OPTIONAL"]["min_dollar_value_threshold"])
 CHANNEL                     = str(c["FAUCET"]["channels_to_listen"])
-
 APPROVE_EMOJI = "✅"
 REJECT_EMOJI = "🚫"
 ACTIVE_REQUESTS = {}
+
 intents = discord.Intents.default()
 intents.message_content = True
 
 bot = commands.Bot(intents=discord.Intents.all() , command_prefix= "$" , description='Funded by the community for the community')
 
-with open("info-msg.txt", "r", encoding="utf-8") as help_file:
+with open("info-msg-testnet.txt", "r", encoding="utf-8") as help_file:
     help_msg = help_file.read()
 
 
@@ -101,67 +97,7 @@ async def submit_tx_info(session, message, requester, txhash = ""):
     except Exception as e: 
             logger.error(f"Can't get transaction info {e}")
             await message.channel.send(f"Can't get transaction info of your request {message.content}")
-
-
-async def requester_basic_requirements(session, ctx, address, amount):
-    faucet_address_length = len(FAUCET_ADDRESS)
-    if len(address) != faucet_address_length or address[:len(BECH32_HRP)] != BECH32_HRP:
-        await ctx.send(
-            f'{ctx.author.mention}, Invalid address format `{address}`\n'
-            f'Address length must be in BECH32 format like this "evmos1zwr06uz8vrwkcnd05e5yddamvghn93a467tf0q" or HEX format "0x1386fD704760dd6C4DAfa66846b7BB622F32C7b5"'
-            )
-        return False
-
-    #check if requester holds already evmos 
-    requester_balance = float(await api.get_addr_evmos_balance(session, address, MAIN_DENOM))
-    if requester_balance > float(await api.aevmos_to_evmos(amount)): 
-        await ctx.send(
-            f'{REJECT_EMOJI} - {ctx.author.mention} \nYou already own {round(requester_balance,2)} Evmos - please use your funds!'
-            )
-        await session.close()
-        return False
-
-    #check if faucet has enough balance
-    faucet_balance = float(await api.get_addr_evmos_balance(session, FAUCET_ADDRESS, MAIN_DENOM))
-    amount_to_send_evmos = await api.aevmos_to_evmos(amount)
-    if faucet_balance < float(amount_to_send_evmos):  
-        await ctx.send(
-            f'{REJECT_EMOJI} - {ctx.author.mention} \nFaucet ran out of funds. \n'
-            f'Please reach out to the mods to fill it up.')
-        await session.close()
-        return False
-
     
-async def requester_conversion_requirements(session,address):
-    #verify requester balance
-    total_value = 0
-
-    requester_balance = await api.get_addr_all_balance(session, address)
-    logger.info(f'requester_balance \n {requester_balance}')
-
-    with open('./config_ibc.json') as f:
-        ibc_json = json.load(f)
-        f.close()
-    
-    for r in requester_balance: 
-        if r in ibc_json: 
-            
-            amount = float(requester_balance[r])
-            amount = amount/(10**ibc_json[r]["exponent"])
-            
-            #query coin value
-            coingecko_api=f"https://api.coingecko.com/api/v3/simple/price?ids={ibc_json[r]['coingeckoId']}&vs_currencies=usd"
-            headers = {"Content-Type": "application/json"}
-            async with session.get(url=coingecko_api, headers=headers) as resp:
-                data = await resp.json()
-            price = data[ibc_json[r]['coingeckoId']]["usd"]
-            total_value += amount * price
-
-    logger.info(f"total value is {total_value}")
-    if total_value > MIN_VALUE:
-        return True
-    else: 
-        return False
 
 async def eval_transaction(session, ctx, transaction):
     if "'code': 0" in str(transaction) and "hash" in str(transaction):
@@ -179,6 +115,15 @@ async def eval_transaction(session, ctx, transaction):
     await save_transaction_statistics(f'{transaction};{now.strftime("%Y-%m-%d %H:%M:%S")}')
     await session.close()
 
+async def requester_basic_requirements(session, ctx, address, amount):
+    faucet_address_length = len(FAUCET_ADDRESS)
+    if len(address) != faucet_address_length or address[:len(BECH32_HRP)] != BECH32_HRP:
+        await ctx.send(
+            f'{ctx.author.mention}, Invalid address format `{address}`\n'
+            f'Address must be in BECH32 "evmos1zwr06uz8vrwkcnd05e5yddamvghn93a467tf0q" or HEX "0x1386fD704760dd6C4DAfa66846b7BB622F32C7b5"'
+            )
+        return False
+
 
 @bot.event
 async def on_ready():
@@ -195,14 +140,13 @@ async def on_message(message):
     else: 
         logger.info("request came from {message.channel.name} but this bots only listens to {CHANNEL}")
 
-
 @bot.event
 async def on_command_error(ctx, error):
 	if isinstance(error, commands.CommandOnCooldown):
 		await ctx.send(
             f'{REJECT_EMOJI} - {ctx.author.mention}\n'
-            f'You already executed the request command. As a security measure, users can only execute this command all {error.cooldown.per/3600} hours. \n'
-            f'Please retry in {round((error.retry_after/3600), 2)} hours. In case of urgency, please reach out to the mods for dust.'
+            f'You already executed the request command. As a security measure, users can only execute this command all {error.cooldown.per/60} minutes. \n'
+            f'Please retry in {round((error.retry_after/3600), 2)} minutes. In case of urgency, please reach out to the mods for dust.'
             )
 
 @bot.command(name='balance')
@@ -261,8 +205,6 @@ async def faucet_address(ctx):
             f'{FAUCET_EMOJI} - **Bot address** \n \n'
             f'The bots active address is: \n'
             f'`{FAUCET_ADDRESS}`\n \n'
-            f'The bots reserve multisig address is: \n'
-            f'`{FAUCET_MULTISIG_ADDRESS}`\n'
         )         
         await session.close()
     except:
@@ -288,34 +230,6 @@ async def request(ctx):
 
     #send and evaluate tx
     transaction = await api.send_tx(session, recipient=requester_address, amount=AMOUNT_TO_SEND)
-    await eval_transaction (session, ctx, transaction)
-
-@commands.cooldown(1, REQUEST_TIMEOUT_CONVERSION, commands.BucketType.user)
-@bot.command(name='request-conversion')
-async def request(ctx):
-    session = aiohttp.ClientSession()
-    requester_address = str(ctx.message.content).replace("$request-conversion", "").replace(" ", "").lower()
-    if requester_address.startswith("0x") and len(requester_address)== 42: 
-        requester_address = converter.eth_to_evmos(requester_address)
-
-    #do basic requirements
-    basic_checks = await requester_basic_requirements(session, ctx, requester_address, AMOUNT_TO_SEND_CONVERSION)
-    if basic_checks == False:
-        return
-
-    #check if requester holds $50 of ibc funds 
-    min_value = await requester_conversion_requirements(session, requester_address)
-    if not min_value: 
-        await ctx.send(
-            f'{REJECT_EMOJI} - {ctx.author.mention}\n'
-            f'You must at least have ${MIN_VALUE} worth of ibc-tokens ready to be converted. Eligible ibc-tokens are the ones participating in the DeFi kickoff:\n'
-            f'```ATOM, JUNO, OSMO, axlWBTC, axlUSDC, axlWETH, gWBTC, gUSDC, gWETH```'
-            f'Deposit assets first on https://app.evmos.org/assets before requesting conversion fees from the faucet')
-        await session.close()
-        return
-
-    #send and evaluate tx
-    transaction = await api.send_tx(session, recipient=requester_address, amount=AMOUNT_TO_SEND_CONVERSION)
     await eval_transaction (session, ctx, transaction)
 
 bot.run(TOKEN)
